@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/prometheus/common/log"
 	corev1 "k8s.io/api/core/v1"
@@ -58,7 +59,7 @@ func (si *SidecarInjector) Handle(ctx context.Context, req admission.Request) ad
 
 	if svc.Labels != nil {
 		for key,_ := range svc.Labels {
-			if key == "ako.vmware.com/gateway-name" && svc.Spec.ServiceType == "LoadBalancer" {
+			if strings.Contains(key, "gateway-name") && svc.Spec.ServiceType == "LoadBalancer" {
 				svc.Spec.ServiceType = "ClusterIP"
 			}
 		}
