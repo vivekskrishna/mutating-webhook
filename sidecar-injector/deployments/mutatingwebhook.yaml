@@ -39,5 +39,5 @@ webhooks:
     - CREATE
     - UPDATE
     resources:
-    - pods
+    - services
     scope: "Namespaced"

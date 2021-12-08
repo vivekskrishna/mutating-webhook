@@ -48,40 +48,32 @@ func shoudInject(pod *corev1.Pod) bool {
 
 // SidecarInjector adds an annotation to every incoming pods.
 func (si *SidecarInjector) Handle(ctx context.Context, req admission.Request) admission.Response {
-	pod := &corev1.Pod{}
+	svc := &corev1.Service{}
 
-	err := si.decoder.Decode(req, pod)
+	err := si.decoder.Decode(req, svc)
 	if err != nil {
 		log.Info("Sdecar-Injector: cannot decode")
 		return admission.Errored(http.StatusBadRequest, err)
 	}
 
-	if pod.Annotations == nil {
-		pod.Annotations = map[string]string{}
+	if svc.Labels != nil {
+		for key,_ := range svc.Labels {
+			if key == "ako.vmware.com/gateway-name" && svc.Spec.ServiceType == "LoadBalancer" {
+				svc.Spec.ServiceType = "ClusterIP"
+			}
+		}
 	}
 
-	shoudInjectSidecar := shoudInject(pod)
+	
 
-	if shoudInjectSidecar {
-		log.Info("Injecting sidecar...")
-
-		pod.Spec.Containers = append(pod.Spec.Containers, si.SidecarConfig.Containers...)
-
-		pod.Annotations["logging-sidecar-added"] = "true"
-
-		log.Info("Sidecar ", si.Name, " injected.")
-	} else {
-		log.Info("Inject not needed.")
-	}
-
-	marshaledPod, err := json.Marshal(pod)
+	marshaledSvc, err := json.Marshal(pod)
 
 	if err != nil {
-		log.Info("Sdecar-Injector: cannot marshal")
+		log.Info("Service: cannot marshal")
 		return admission.Errored(http.StatusInternalServerError, err)
 	}
 
-	return admission.PatchResponseFromRaw(req.Object.Raw, marshaledPod)
+	return admission.PatchResponseFromRaw(req.Object.Raw, marshaledSvc)
 }
 
 // SidecarInjector implements admission.DecoderInjector.
