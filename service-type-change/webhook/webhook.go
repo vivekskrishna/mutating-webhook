@@ -59,15 +59,21 @@ func (si *SidecarInjector) Handle(ctx context.Context, req admission.Request) ad
 
 	if svc.Labels != nil {
 		for key,_ := range svc.Labels {
-			if strings.Contains(key, "gateway-name") && svc.Spec.ServiceType == "LoadBalancer" {
-				svc.Spec.ServiceType = "ClusterIP"
+			if strings.Contains(key, "gateway-name") && svc.Spec.Type == corev1.ServiceTypeLoadBalancer {
+				log.Info("Changing service type from ",corev1.ServiceTypeLoadBalancer," to ",corev1.ServiceTypeClusterIP," for service ", svc.Name)
+				svc.Spec.Type = corev1.ServiceTypeClusterIP
+				svc.Spec.ExternalTrafficPolicy = ""
+			} else {
+				log.Info("Skipping service ", svc.Name," as type is ",svc.Spec.Type)
 			}
 		}
 	}
 
-	
 
-	marshaledSvc, err := json.Marshal(pod)
+
+	marshaledSvc, err := json.Marshal(svc)
+
+
 
 	if err != nil {
 		log.Info("Service: cannot marshal")
